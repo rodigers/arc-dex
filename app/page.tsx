@@ -513,6 +513,7 @@ export default function Home() {
             )}
           </aside>
 
+
           {/* CENTER: action first */}
           <div className={`flex w-full flex-col gap-5 ${connection ? "" : "xl:col-start-2"} xl:gap-6`}>
             {/* Tabs */}

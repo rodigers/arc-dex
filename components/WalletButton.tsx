@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { EIP1193Provider } from "viem";
 import { useWallet } from "@/lib/useWallet";
+import { useModalLock } from "@/lib/modal";
 
 export function WalletButton({
   onConnected,
@@ -11,6 +12,7 @@ export function WalletButton({
 }) {
   const { wallets, state, connecting, error, connect, disconnect } = useWallet();
   const [open, setOpen] = useState(false);
+  useModalLock(open);
 
   if (state) {
     onConnected(state.provider, state.address);
@@ -35,7 +37,7 @@ export function WalletButton({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           onClick={() => setOpen(false)}
         >
           <div

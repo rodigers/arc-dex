@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { BRIDGE_CHAINS, type BridgeChain } from "@/lib/bridgeChains";
 import { ChainIcon } from "@/components/ChainIcon";
+import { useModalLock } from "@/lib/modal";
 
 /**
  * Searchable chain picker modal — replaces the old 4-chain <select>.
@@ -20,6 +21,7 @@ export function ChainPicker({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  useModalLock(open);
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<"All" | "Mainnet" | "Testnet">("All");
 
@@ -58,7 +60,7 @@ export function ChainPicker({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"
