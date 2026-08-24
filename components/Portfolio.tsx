@@ -21,6 +21,7 @@ export function Portfolio({ balances }: { balances: Balances }) {
   const { prices } = useMarketPrices();
   const [hidden, setHidden] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -73,13 +74,29 @@ export function Portfolio({ balances }: { balances: Balances }) {
 
   return (
     <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
-      <div className="flex items-center justify-between">
+      {/* Collapsed header — click to expand (mobile-friendly drawer pattern) */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full cursor-pointer items-center justify-between text-left"
+        aria-expanded={expanded}
+      >
         <div>
           <div className="text-xs text-[var(--muted)]">Total value</div>
           <div className="mono mt-0.5 text-lg font-semibold">
             {anyPrice ? mask(formatUsd(total)) : "—"}
           </div>
         </div>
+        <span
+          className={`text-xs text-[var(--muted)] transition-transform ${expanded ? "rotate-180" : ""}`}
+        >
+          ▼
+        </span>
+      </button>
+
+      {expanded && (
+        <>
+      <div className="mt-1 flex items-center justify-end">
         <button
           type="button"
           onClick={toggleHidden}
@@ -149,6 +166,8 @@ export function Portfolio({ balances }: { balances: Balances }) {
           </li>
         ))}
       </ul>
+        </>
+      )}
     </section>
   );
 }

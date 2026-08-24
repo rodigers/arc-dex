@@ -388,78 +388,75 @@ export default function Home() {
           : "var(--success)";
 
   return (
-    <div className="grid-bg flex flex-1 flex-col items-center px-4 py-10">
-      <div className="flex w-full max-w-md flex-col gap-6">
+    <div className="grid-bg flex min-h-dvh flex-col px-4 py-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5">
+        {/* Header */}
         <header className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold tracking-tight">ArcSwap</h1>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--accent)] text-sm font-bold text-[var(--background)]">
+              A
+            </div>
+            <h1 className="text-xl font-semibold tracking-tight">ArcSwap</h1>
+          </div>
           <div className="flex items-center gap-2">
+            {/* Chain chip — compact network status */}
+            <span
+              className={`mono hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] sm:flex ${
+                connection && !wrongNetwork
+                  ? "border-[var(--border)] text-[var(--muted)]"
+                  : "border-red-500/40 text-red-500"
+              }`}
+              title={
+                wrongNetwork
+                  ? "Wrong network — switch to Arc Testnet"
+                  : "Arc Testnet · gas USDC · finality <1s"
+              }
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  connection && !wrongNetwork ? "bg-emerald-500" : "bg-red-500"
+                }`}
+              />
+              Arc Testnet
+            </span>
+            {wrongNetwork && (
+              <button
+                onClick={() => connection && void switchToArc(connection.provider)}
+                className="rounded-xl bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+              >
+                Switch to Arc
+              </button>
+            )}
             <SettingsPopover settings={settings} onChange={setSettings} />
             <WalletButton onConnected={handleConnected} />
           </div>
         </header>
 
-        <section className="grid grid-cols-3 gap-2">
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5">
-            <div className="text-xs text-[var(--muted)]">Chain</div>
-            <div className="mono mt-0.5 text-sm font-semibold">
-              {ARC_CHAIN_ID}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5">
-            <div className="text-xs text-[var(--muted)]">Finality</div>
-            <div className="mono mt-0.5 text-sm font-semibold">&lt;1s</div>
-          </div>
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5">
-            <div className="text-xs text-[var(--muted)]">Gas</div>
-            <div className="mono mt-0.5 text-sm font-semibold">USDC</div>
-          </div>
-        </section>
-
-        {connection && (
-          <section className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm">
-            {TOKENS.map((t) => (
-              <span key={t.symbol} className="flex items-center gap-1.5">
-                <TokenDot symbol={t.symbol} />
-                <span className="mono">{t.symbol}</span>
-                <span className="mono text-xs text-[var(--muted)]">
-                  {formatAmount(balances[balanceKey(t.symbol as TokenSymbol)] ?? 0)}
-                </span>
-              </span>
-            ))}
-            <button
-              onClick={refetch}
-              disabled={balancesLoading}
-              className="ml-1 rounded-lg border border-[var(--border)] p-1 text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-40"
-              aria-label="Refresh balances"
-            >
-              {balancesLoading ? "…" : "↻"}
-            </button>
-          </section>
-        )}
-
-        {connection && <Portfolio balances={balances} />}
-
-        {/* Tabs */}
-        <section className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--border)] bg-[var(--card)] p-1">
-          {(
-            [
-              ["swap", "Swap"],
-              ["bridge", "Bridge"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={`rounded-lg py-2 text-sm font-medium transition-colors ${
-                tab === id
-                  ? "bg-[var(--accent)] text-[var(--background)]"
-                  : "text-[var(--muted)] hover:text-[var(--foreground)]"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </section>
+        {/* Two-column desktop / stacked mobile */}
+        <div className="grid flex-1 items-start gap-5 lg:grid-cols-[minmax(0,420px)_minmax(300px,360px)] lg:justify-center">
+          {/* MAIN column: action first */}
+          <div className="flex flex-col gap-4">
+            {/* Tabs */}
+            <section className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--border)] bg-[var(--card)] p-1">
+              {(
+                [
+                  ["swap", "Swap"],
+                  ["bridge", "Bridge"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => setTab(id)}
+                  className={`rounded-lg py-2 text-sm font-medium transition-colors ${
+                    tab === id
+                      ? "bg-[var(--accent)] text-[var(--background)]"
+                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </section>
 
         {tab === "swap" && <PriceChart />}
 
@@ -634,19 +631,28 @@ export default function Home() {
           />
         )}
 
-        <RecentSwaps
-          refreshKey={swapsRefreshKey}
-          address={connection?.address ?? null}
-        />
+            <RecentSwaps
+              refreshKey={swapsRefreshKey}
+              address={connection?.address ?? null}
+            />
+          </div>
 
-        <footer className="pb-6 text-center text-xs text-[var(--muted)]">
+          {/* CONTEXT column: portfolio + chart (desktop) / below action (mobile) */}
+          <aside className="flex flex-col gap-4">
+            {connection && <Portfolio balances={balances} />}
+            {tab === "swap" && <PriceChart />}
+          </aside>
+        </div>
+
+        <footer className="pb-2 text-center text-xs text-[var(--muted)]">
+          Arc Testnet · chain 5042002 · gas USDC ·{" "}
           <a
             href={ARC_EXPLORER}
             target="_blank"
             rel="noopener noreferrer"
             className="underline-offset-2 hover:underline"
           >
-            Arc Testnet Explorer ↗
+            Explorer ↗
           </a>
         </footer>
       </div>
