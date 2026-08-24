@@ -38,6 +38,9 @@ export type Balances = Record<string, number>;
 export function useBalances(address: string | null) {
   const [balances, setBalances] = useState<Balances>({});
   const [loading, setLoading] = useState(false);
+  const [nonce, setNonce] = useState(0);
+
+  const refetch = () => setNonce((n) => n + 1);
 
   useEffect(() => {
     if (!address) {
@@ -88,7 +91,7 @@ export function useBalances(address: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [address]);
+  }, [address, nonce]);
 
-  return { balances, loading };
+  return { balances, loading, refetch };
 }

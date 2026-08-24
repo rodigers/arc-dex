@@ -14,6 +14,7 @@ import {
 } from "@/components/RecentSwaps";
 import { TokenBadge, TokenDot } from "@/components/TokenBadge";
 import { WalletButton } from "@/components/WalletButton";
+import { BridgePanel } from "@/components/BridgePanel";
 
 type Connection = { provider: EIP1193Provider; address: string };
 
@@ -30,8 +31,11 @@ const ARC_CHAIN_ID = 5042002;
 
 function formatAmount(value: number) {
   if (!Number.isFinite(value)) return "0";
-  const fixed = value.toFixed(6);
-  return fixed.replace(/\.?0+$/, "");
+  if (Math.abs(value) >= 1000)
+    return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  if (Math.abs(value) >= 1)
+    return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  return value.toLocaleString("en-US", { maximumFractionDigits: 4 });
 }
 
 function balanceKey(symbol: TokenSymbol) {
@@ -54,11 +58,14 @@ export default function Home() {
   const [settings, setSettings] = useState<SwapSettings>(DEFAULT_SETTINGS);
   const [flipRotated, setFlipRotated] = useState(false);
   const [swapsRefreshKey, setSwapsRefreshKey] = useState(0);
+  const [tab, setTab] = useState<"swap" | "bridge">("swap");
 
   const connRef = useRef<Connection | null>(null);
   const adapterPromiseRef = useRef<Promise<AdapterFor> | null>(null);
 
-  const { balances } = useBalances(connection?.address ?? null);
+  const { balances, loading: balancesLoading, refetch } = useBalances(
+    connection?.address ?? null
+  );
 
   const slippageBps = Math.round(settings.slippagePct * 100);
 
@@ -115,7 +122,6 @@ export default function Home() {
             from: {
               adapter,
               chain: "Arc_Testnet",
-              address: connection.address,
             },
             tokenIn: paySymbol,
             tokenOut: receiveSymbol,
@@ -204,7 +210,6 @@ export default function Home() {
         from: {
           adapter,
           chain: "Arc_Testnet",
-          address: connection.address,
         },
         tokenIn: paySymbol,
         tokenOut: receiveSymbol,
@@ -311,10 +316,43 @@ export default function Home() {
                 </span>
               </span>
             ))}
+            <button
+              onClick={refetch}
+              disabled={balancesLoading}
+              className="ml-1 rounded-lg border border-[var(--border)] p-1 text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-40"
+              aria-label="Refresh balances"
+            >
+              {balancesLoading ? "…" : "↻"}
+            </button>
           </section>
         )}
 
-        <main className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+        {/* Tabs */}
+        <section className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--border)] bg-[var(--card)] p-1">
+          {(
+            [
+              ["swap", "Swap"],
+              ["bridge", "Bridge"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={`rounded-lg py-2 text-sm font-medium transition-colors ${
+                tab === id
+                  ? "bg-[var(--accent)] text-[var(--background)]"
+                  : "text-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </section>
+
+        <main
+          className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4"
+          hidden={tab !== "swap"}
+        >
           <div className="rounded-xl border border-[var(--border)] p-3">
             <div className="mb-2 flex items-center justify-between text-sm">
               <span className="flex items-center gap-1.5 text-[var(--muted)]">
@@ -461,6 +499,18 @@ export default function Home() {
             {swapButtonLabel()}
           </button>
         </main>
+
+        {/* Bridge tab */}
+        {tab === "bridge" && (
+          <BridgePanel
+            connection={connection}
+            getAdapter={getAdapter as () => never}
+            onBridged={() => {
+              refetch();
+              setSwapsRefreshKey((k) => k + 1);
+            }}
+          />
+        )}
 
         <RecentSwaps refreshKey={swapsRefreshKey} />
 
