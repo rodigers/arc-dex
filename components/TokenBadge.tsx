@@ -1,48 +1,64 @@
 "use client";
 
+import { useState } from "react";
 import type { TokenSymbol } from "@/lib/tokens";
-import { tokenMeta, TOKENS } from "@/lib/tokens";
+import { displaySymbolOf, tokenMeta } from "@/lib/tokens";
+import type { Balances } from "@/lib/balances";
+import { TokenPicker } from "@/components/TokenPicker";
 
 export function TokenBadge({
   symbol,
   onChange,
+  balances,
 }: {
   symbol: TokenSymbol;
   onChange?: (s: TokenSymbol) => void;
+  balances?: Balances;
 }) {
   const meta = tokenMeta(symbol);
+  const [open, setOpen] = useState(false);
+
   if (!onChange) {
     return (
       <span className="token-chip mono flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 py-2 text-sm">
         <TokenDot symbol={symbol} />
-        {symbol}
+        {displaySymbolOf(meta)}
       </span>
     );
   }
   return (
-    <select
-      value={symbol}
-      onChange={(e) => onChange(e.target.value as TokenSymbol)}
-      className="token-chip mono cursor-pointer appearance-none rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm outline-none"
-    >
-      {TOKENS.map((t) => (
-        <option key={t.symbol} value={t.symbol}>
-          {t.symbol}
-        </option>
-      ))}
-    </select>
+    <>
+      <button
+        type="button"
+        aria-label={`Change token, current ${displaySymbolOf(meta)}`}
+        onClick={() => setOpen(true)}
+        className="token-chip mono flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm outline-none transition hover:border-[var(--border-strong)]"
+      >
+        <TokenDot symbol={symbol} />
+        {displaySymbolOf(meta)}
+        <span className="text-[10px] text-[var(--muted)]" aria-hidden>
+          ▾
+        </span>
+      </button>
+      <TokenPicker
+        open={open}
+        onClose={() => setOpen(false)}
+        onSelect={onChange}
+        balances={balances}
+      />
+    </>
   );
 }
 
 export function TokenDot({ symbol }: { symbol: string }) {
   const meta = tokenMeta(symbol);
   return (
-    <span
-      className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
-      style={{ background: meta.color }}
-      aria-hidden
-    >
-      {meta.glyph === "⛽" ? "G" : meta.glyph}
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={meta.logo}
+      alt={displaySymbolOf(meta)}
+      className="h-5 w-5 rounded-full object-cover"
+      draggable={false}
+    />
   );
 }

@@ -7,6 +7,7 @@ import {
   formatUnits,
   http,
 } from "viem";
+import type { TokenSymbol } from "@/lib/tokens";
 
 export const ARC_TESTNET_RPC = "https://rpc.testnet.arc.io";
 
@@ -30,6 +31,13 @@ function getClient() {
 }
 
 export type Balances = Record<string, number>;
+
+/** Map a UI token symbol to its key in the balances map. */
+export function tokenBalanceKey(symbol: TokenSymbol): string {
+  if (symbol === "NATIVE") return "NATIVE";
+  if (symbol === "EURC") return EURC_ADDRESS.toLowerCase();
+  return USDC_ADDRESS.toLowerCase();
+}
 
 /**
  * Fetch ERC-20 + native balances for an address.

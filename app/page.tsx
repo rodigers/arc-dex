@@ -3,9 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { EIP1193Provider } from "viem";
 import { getAppKit, makeAdapter } from "@/lib/appkit";
-import { ARC_EXPLORER, TOKENS, type TokenSymbol } from "@/lib/tokens";
-import { EURC_ADDRESS, USDC_ADDRESS, useBalances } from "@/lib/balances";
+import {
+  ARC_CHAIN_ID_HEX,
+  ARC_EXPLORER,
+  TOKENS,
+  type TokenSymbol,
+} from "@/lib/tokens";
+import { tokenBalanceKey, useBalances } from "@/lib/balances";
+import { switchToArc } from "@/lib/wallet";
 import { useToast } from "@/lib/toast";
+import { useCountUp } from "@/lib/useCountUp";
 import { SettingsPopover, DEFAULT_SETTINGS, type SwapSettings } from "@/components/SettingsPopover";
 import {
   RecentSwaps,
@@ -15,6 +22,9 @@ import {
 import { TokenBadge, TokenDot } from "@/components/TokenBadge";
 import { WalletButton } from "@/components/WalletButton";
 import { BridgePanel } from "@/components/BridgePanel";
+import { PriceChart } from "@/components/PriceChart";
+import { Portfolio } from "@/components/Portfolio";
+import { SwapConfirmModal } from "@/components/SwapConfirmModal";
 
 type Connection = { provider: EIP1193Provider; address: string };
 
@@ -28,6 +38,45 @@ type AdapterFor = Awaited<ReturnType<typeof makeAdapter>>;
 
 const FAUCET_URL = "https://faucet.circle.com";
 const ARC_CHAIN_ID = 5042002;
+const PREFS_KEY = "arcswap_prefs";
+
+function isTokenSymbol(value: unknown): value is TokenSymbol {
+  return (
+    typeof value === "string" &&
+    TOKENS.some((t) => t.symbol === value)
+  );
+}
+
+function readPrefs(): {
+  paySymbol?: TokenSymbol;
+  receiveSymbol?: TokenSymbol;
+  slippagePct?: number;
+} {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(PREFS_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return {};
+    const prefs = parsed as Record<string, unknown>;
+    const slippage =
+      typeof prefs.slippagePct === "number" &&
+      Number.isFinite(prefs.slippagePct) &&
+      prefs.slippagePct >= 0.01 &&
+      prefs.slippagePct <= 50
+        ? prefs.slippagePct
+        : undefined;
+    return {
+      paySymbol: isTokenSymbol(prefs.paySymbol) ? prefs.paySymbol : undefined,
+      receiveSymbol: isTokenSymbol(prefs.receiveSymbol)
+        ? prefs.receiveSymbol
+        : undefined,
+      slippagePct: slippage,
+    };
+  } catch {
+    return {};
+  }
+}
 
 function formatAmount(value: number) {
   if (!Number.isFinite(value)) return "0";
@@ -39,9 +88,7 @@ function formatAmount(value: number) {
 }
 
 function balanceKey(symbol: TokenSymbol) {
-  if (symbol === "NATIVE") return "NATIVE";
-  if (symbol === "EURC") return EURC_ADDRESS.toLowerCase();
-  return USDC_ADDRESS.toLowerCase();
+  return tokenBalanceKey(symbol);
 }
 
 export default function Home() {
@@ -59,6 +106,9 @@ export default function Home() {
   const [flipRotated, setFlipRotated] = useState(false);
   const [swapsRefreshKey, setSwapsRefreshKey] = useState(0);
   const [tab, setTab] = useState<"swap" | "bridge">("swap");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [chainId, setChainId] = useState<string | null>(null);
+  const [quoteNonce, setQuoteNonce] = useState(0);
 
   const connRef = useRef<Connection | null>(null);
   const adapterPromiseRef = useRef<Promise<AdapterFor> | null>(null);
@@ -68,6 +118,59 @@ export default function Home() {
   );
 
   const slippageBps = Math.round(settings.slippagePct * 100);
+
+  // Restore last-used tokens + slippage after mount (avoids SSR mismatch).
+  useEffect(() => {
+    const prefs = readPrefs();
+    if (prefs.paySymbol) setPaySymbol(prefs.paySymbol);
+    if (prefs.receiveSymbol) setReceiveSymbol(prefs.receiveSymbol);
+    if (prefs.slippagePct != null) {
+      setSettings((s) => ({ ...s, slippagePct: prefs.slippagePct! }));
+    }
+  }, []);
+
+  // Persist preferences whenever they change.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({
+          paySymbol,
+          receiveSymbol,
+          slippagePct: settings.slippagePct,
+        })
+      );
+    } catch {
+      // storage unavailable — prefs simply won't persist
+    }
+  }, [paySymbol, receiveSymbol, settings.slippagePct]);
+
+  // Track the connected wallet's chain and react to changes.
+  useEffect(() => {
+    if (!connection) {
+      setChainId(null);
+      return;
+    }
+    const provider = connection.provider;
+    let cancelled = false;
+    provider
+      .request({ method: "eth_chainId", params: undefined })
+      .then((id: unknown) => {
+        if (!cancelled && typeof id === "string") setChainId(id);
+      })
+      .catch(() => {});
+    const onChainChanged = (id: string) => setChainId(id);
+    provider.on("chainChanged", onChainChanged);
+    return () => {
+      cancelled = true;
+      provider.removeListener("chainChanged", onChainChanged);
+    };
+  }, [connection]);
+
+  const wrongNetwork =
+    !!connection &&
+    chainId != null &&
+    chainId.toLowerCase() !== ARC_CHAIN_ID_HEX;
 
   const handleConnected = useCallback(
     (provider: EIP1193Provider, address: string) => {
@@ -168,6 +271,7 @@ export default function Home() {
     receiveSymbol,
     slippageBps,
     getAdapter,
+    quoteNonce,
   ]);
 
   const parsedPayAmount = Number(payAmount);
@@ -201,7 +305,12 @@ export default function Home() {
     setPayAmount(formatAmount(payBalance));
   }
 
-  async function handleSwap() {
+  function openConfirm() {
+    if (!canSwap) return;
+    setConfirmOpen(true);
+  }
+
+  async function executeSwap() {
     if (!connection || insufficient) return;
     setSwapping(true);
     try {
@@ -237,6 +346,7 @@ export default function Home() {
       saveRecentSwap(record);
       setSwapsRefreshKey((k) => k + 1);
       setPayAmount("");
+      setConfirmOpen(false);
     } catch (err) {
       toast({
         variant: "error",
@@ -327,6 +437,8 @@ export default function Home() {
           </section>
         )}
 
+        {connection && <Portfolio balances={balances} />}
+
         {/* Tabs */}
         <section className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--border)] bg-[var(--card)] p-1">
           {(
@@ -348,6 +460,8 @@ export default function Home() {
             </button>
           ))}
         </section>
+
+        {tab === "swap" && <PriceChart />}
 
         <main
           className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4"
@@ -382,7 +496,11 @@ export default function Home() {
                 className="mono min-w-0 flex-1 bg-transparent text-2xl outline-none placeholder:text-[var(--muted)]"
                 aria-label="Amount to pay"
               />
-              <TokenBadge symbol={paySymbol} onChange={selectPay} />
+              <TokenBadge
+                symbol={paySymbol}
+                onChange={selectPay}
+                balances={balances}
+              />
             </div>
           </div>
 
@@ -429,7 +547,11 @@ export default function Home() {
               {quoting ? (
                 <span className="skeleton mono h-8 w-24 rounded-xl" />
               ) : (
-                <TokenBadge symbol={receiveSymbol} onChange={selectReceive} />
+                <TokenBadge
+                  symbol={receiveSymbol}
+                  onChange={selectReceive}
+                  balances={balances}
+                />
               )}
             </div>
           </div>
@@ -492,7 +614,7 @@ export default function Home() {
 
           <button
             type="button"
-            onClick={handleSwap}
+            onClick={openConfirm}
             disabled={!canSwap}
             className="mt-3 w-full cursor-pointer rounded-xl bg-[var(--accent)] py-3 text-base font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -512,7 +634,10 @@ export default function Home() {
           />
         )}
 
-        <RecentSwaps refreshKey={swapsRefreshKey} />
+        <RecentSwaps
+          refreshKey={swapsRefreshKey}
+          address={connection?.address ?? null}
+        />
 
         <footer className="pb-6 text-center text-xs text-[var(--muted)]">
           <a
@@ -525,6 +650,20 @@ export default function Home() {
           </a>
         </footer>
       </div>
+
+      <SwapConfirmModal
+        open={confirmOpen}
+        paySymbol={paySymbol}
+        receiveSymbol={receiveSymbol}
+        payAmount={payAmount}
+        quote={quote}
+        slippagePct={settings.slippagePct}
+        deadlineMinutes={settings.deadlineMinutes}
+        busy={swapping}
+        getAdapter={getAdapter}
+        onConfirm={() => void executeSwap()}
+        onClose={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }
