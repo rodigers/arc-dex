@@ -1,69 +1,480 @@
-import Image from "next/image";
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { EIP1193Provider } from "viem";
+import { getAppKit, makeAdapter } from "@/lib/appkit";
+import { ARC_EXPLORER, TOKENS, type TokenSymbol } from "@/lib/tokens";
+import { EURC_ADDRESS, USDC_ADDRESS, useBalances } from "@/lib/balances";
+import { useToast } from "@/lib/toast";
+import { SettingsPopover, DEFAULT_SETTINGS, type SwapSettings } from "@/components/SettingsPopover";
+import {
+  RecentSwaps,
+  saveRecentSwap,
+  type SwapRecord,
+} from "@/components/RecentSwaps";
+import { TokenBadge, TokenDot } from "@/components/TokenBadge";
+import { WalletButton } from "@/components/WalletButton";
+
+type Connection = { provider: EIP1193Provider; address: string };
+
+type QuoteState = {
+  receiveAmount: string;
+  minReceived: string | null;
+  feePct: number | null;
+};
+
+type AdapterFor = Awaited<ReturnType<typeof makeAdapter>>;
+
+const FAUCET_URL = "https://faucet.circle.com";
+const ARC_CHAIN_ID = 5042002;
+
+function formatAmount(value: number) {
+  if (!Number.isFinite(value)) return "0";
+  const fixed = value.toFixed(6);
+  return fixed.replace(/\.?0+$/, "");
+}
+
+function balanceKey(symbol: TokenSymbol) {
+  if (symbol === "NATIVE") return "NATIVE";
+  if (symbol === "EURC") return EURC_ADDRESS.toLowerCase();
+  return USDC_ADDRESS.toLowerCase();
+}
 
 export default function Home() {
+  const { toast } = useToast();
+
+  const [connection, setConnection] = useState<Connection | null>(null);
+  const [paySymbol, setPaySymbol] = useState<TokenSymbol>("USDC");
+  const [receiveSymbol, setReceiveSymbol] = useState<TokenSymbol>("EURC");
+  const [payAmount, setPayAmount] = useState("");
+  const [quote, setQuote] = useState<QuoteState | null>(null);
+  const [quoting, setQuoting] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [swapping, setSwapping] = useState(false);
+  const [settings, setSettings] = useState<SwapSettings>(DEFAULT_SETTINGS);
+  const [flipRotated, setFlipRotated] = useState(false);
+  const [swapsRefreshKey, setSwapsRefreshKey] = useState(0);
+
+  const connRef = useRef<Connection | null>(null);
+  const adapterPromiseRef = useRef<Promise<AdapterFor> | null>(null);
+
+  const { balances } = useBalances(connection?.address ?? null);
+
+  const slippageBps = Math.round(settings.slippagePct * 100);
+
+  const handleConnected = useCallback(
+    (provider: EIP1193Provider, address: string) => {
+      const cur = connRef.current;
+      if (cur && cur.provider === provider && cur.address === address) return;
+      const next: Connection = { provider, address };
+      connRef.current = next;
+      queueMicrotask(() => setConnection(next));
+    },
+    []
+  );
+
+  useEffect(() => {
+    adapterPromiseRef.current = null;
+    if (connection) {
+      adapterPromiseRef.current = makeAdapter(connection.provider).catch(
+        (err: unknown) => {
+          adapterPromiseRef.current = null;
+          throw err;
+        }
+      );
+    }
+  }, [connection]);
+
+  const getAdapter = useCallback((): Promise<AdapterFor> => {
+    const p = adapterPromiseRef.current;
+    if (!p) return Promise.reject(new Error("Wallet not connected"));
+    return p;
+  }, []);
+
+  useEffect(() => {
+    setQuote(null);
+    setQuoteError(null);
+
+    const amount = Number(payAmount);
+    if (
+      !connection ||
+      paySymbol === receiveSymbol ||
+      !payAmount ||
+      Number.isNaN(amount) ||
+      amount <= 0
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setQuoting(true);
+      getAdapter()
+        .then((adapter) =>
+          getAppKit().estimateSwap({
+            from: {
+              adapter,
+              chain: "Arc_Testnet",
+              address: connection.address,
+            },
+            tokenIn: paySymbol,
+            tokenOut: receiveSymbol,
+            amountIn: payAmount,
+            config: { slippageBps },
+          })
+        )
+        .then((estimate) => {
+          if (cancelled) return;
+          const out = Number(estimate.estimatedOutput.amount);
+          const totalFees = (estimate.fees ?? []).reduce(
+            (acc, f) => acc + (f.amount !== null ? Number(f.amount) : 0),
+            0
+          );
+          const feePct =
+            Number.isFinite(totalFees) && out + totalFees > 0
+              ? (totalFees / (out + totalFees)) * 100
+              : null;
+          setQuote({
+            receiveAmount: estimate.estimatedOutput.amount,
+            minReceived: estimate.stopLimit.amount,
+            feePct,
+          });
+          setQuoting(false);
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return;
+          setQuote(null);
+          setQuoteError(
+            err instanceof Error ? err.message : "Failed to fetch quote"
+          );
+          setQuoting(false);
+        });
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    connection,
+    payAmount,
+    paySymbol,
+    receiveSymbol,
+    slippageBps,
+    getAdapter,
+  ]);
+
+  const parsedPayAmount = Number(payAmount);
+  const payBalance = connection ? (balances[balanceKey(paySymbol)] ?? 0) : 0;
+  const receiveBalance = connection
+    ? (balances[balanceKey(receiveSymbol)] ?? 0)
+    : 0;
+  const insufficient =
+    connection &&
+    parsedPayAmount > 0 &&
+    Number.isFinite(parsedPayAmount) &&
+    parsedPayAmount > payBalance;
+
+  function selectPay(symbol: TokenSymbol) {
+    if (symbol === receiveSymbol) setReceiveSymbol(paySymbol);
+    setPaySymbol(symbol);
+  }
+
+  function selectReceive(symbol: TokenSymbol) {
+    if (symbol === paySymbol) setPaySymbol(receiveSymbol);
+    setReceiveSymbol(symbol);
+  }
+
+  function flipTokens() {
+    setFlipRotated((v) => !v);
+    setPaySymbol(receiveSymbol);
+    setReceiveSymbol(paySymbol);
+  }
+
+  function setMax() {
+    setPayAmount(formatAmount(payBalance));
+  }
+
+  async function handleSwap() {
+    if (!connection || insufficient) return;
+    setSwapping(true);
+    try {
+      const adapter = await getAdapter();
+      const result = await getAppKit().swap({
+        from: {
+          adapter,
+          chain: "Arc_Testnet",
+          address: connection.address,
+        },
+        tokenIn: paySymbol,
+        tokenOut: receiveSymbol,
+        amountIn: payAmount,
+        config: { slippageBps },
+      });
+
+      const toAmount =
+        result.amountOut ?? quote?.receiveAmount ?? formatAmount(parsedPayAmount);
+      toast({
+        title: result.progress.status === "DONE" ? "Swap complete" : "Swap submitted",
+        description: `${payAmount} ${paySymbol} → ${toAmount} ${receiveSymbol}${
+          result.txHash ? ` · tx ${result.txHash.slice(0, 10)}…` : ""
+        }`,
+      });
+
+      const record: SwapRecord = {
+        txHash: result.txHash || "0x",
+        fromSymbol: paySymbol,
+        toSymbol: receiveSymbol,
+        fromAmount: payAmount,
+        toAmount,
+        timestamp: Date.now(),
+      };
+      saveRecentSwap(record);
+      setSwapsRefreshKey((k) => k + 1);
+      setPayAmount("");
+    } catch (err) {
+      toast({
+        variant: "error",
+        title: "Swap failed",
+        description: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setSwapping(false);
+    }
+  }
+
+  const canSwap =
+    !!connection &&
+    !!quote &&
+    !quoting &&
+    !swapping &&
+    parsedPayAmount > 0 &&
+    !insufficient &&
+    paySymbol !== receiveSymbol;
+
+  function swapButtonLabel() {
+    if (!connection) return "Connect wallet";
+    if (!payAmount || Number.isNaN(parsedPayAmount) || parsedPayAmount <= 0)
+      return "Enter an amount";
+    if (insufficient) return `Insufficient ${paySymbol}`;
+    if (swapping) return "Swapping…";
+    if (quoting) return "Fetching quote…";
+    if (!quote) return "Swap";
+    return "Swap";
+  }
+
+  const impactColor =
+    quote?.feePct == null
+      ? undefined
+      : quote.feePct > 5
+        ? "var(--danger)"
+        : quote.feePct > 2
+          ? "var(--warning)"
+          : "var(--success)";
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="grid-bg flex flex-1 flex-col items-center px-4 py-10">
+      <div className="flex w-full max-w-md flex-col gap-6">
+        <header className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold tracking-tight">ArcSwap</h1>
+          <div className="flex items-center gap-2">
+            <SettingsPopover settings={settings} onChange={setSettings} />
+            <WalletButton onConnected={handleConnected} />
+          </div>
+        </header>
+
+        <section className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5">
+            <div className="text-xs text-[var(--muted)]">Chain</div>
+            <div className="mono mt-0.5 text-sm font-semibold">
+              {ARC_CHAIN_ID}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5">
+            <div className="text-xs text-[var(--muted)]">Finality</div>
+            <div className="mono mt-0.5 text-sm font-semibold">&lt;1s</div>
+          </div>
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5">
+            <div className="text-xs text-[var(--muted)]">Gas</div>
+            <div className="mono mt-0.5 text-sm font-semibold">USDC</div>
+          </div>
+        </section>
+
+        {connection && (
+          <section className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm">
+            {TOKENS.map((t) => (
+              <span key={t.symbol} className="flex items-center gap-1.5">
+                <TokenDot symbol={t.symbol} />
+                <span className="mono">{t.symbol}</span>
+                <span className="mono text-xs text-[var(--muted)]">
+                  {formatAmount(balances[balanceKey(t.symbol as TokenSymbol)] ?? 0)}
+                </span>
+              </span>
+            ))}
+          </section>
+        )}
+
+        <main className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+          <div className="rounded-xl border border-[var(--border)] p-3">
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="flex items-center gap-1.5 text-[var(--muted)]">
+                <TokenDot symbol={paySymbol} />
+                You pay
+              </span>
+              {connection && (
+                <span className="flex items-center gap-2 text-xs text-[var(--muted)]">
+                  Balance:{" "}
+                  <span className="mono">{formatAmount(payBalance)}</span>
+                  <button
+                    type="button"
+                    onClick={setMax}
+                    className="mono cursor-pointer rounded-lg border border-[var(--border)] px-1.5 py-0.5 font-semibold transition hover:border-[var(--border-strong)]"
+                  >
+                    MAX
+                  </button>
+                </span>
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <input
+                inputMode="decimal"
+                placeholder="0.00"
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                className="mono min-w-0 flex-1 bg-transparent text-2xl outline-none placeholder:text-[var(--muted)]"
+                aria-label="Amount to pay"
+              />
+              <TokenBadge symbol={paySymbol} onChange={selectPay} />
+            </div>
+          </div>
+
+          <div className="relative z-10 my-1 flex justify-center">
+            <button
+              type="button"
+              aria-label="Flip tokens"
+              onClick={flipTokens}
+              className={`flex h-9 w-9 -translate-y-0.5 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card)] text-lg transition-transform duration-300 hover:border-[var(--border-strong)] ${
+                flipRotated ? "rotate-180" : ""
+              }`}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+              ⇅
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-[var(--border)] p-3">
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="flex items-center gap-1.5 text-[var(--muted)]">
+                <TokenDot symbol={receiveSymbol} />
+                You receive
+              </span>
+              {connection && (
+                <span className="text-xs text-[var(--muted)]">
+                  Balance:{" "}
+                  <span className="mono">{formatAmount(receiveBalance)}</span>
+                </span>
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <input
+                readOnly
+                placeholder="0.00"
+                value={
+                  quoting
+                    ? ""
+                    : (quote?.receiveAmount
+                        ? formatAmount(Number(quote.receiveAmount))
+                        : "")
+                }
+                className="mono min-w-0 flex-1 bg-transparent text-2xl outline-none placeholder:text-[var(--muted)]"
+                aria-label="Amount to receive"
+              />
+              {quoting ? (
+                <span className="skeleton mono h-8 w-24 rounded-xl" />
+              ) : (
+                <TokenBadge symbol={receiveSymbol} onChange={selectReceive} />
+              )}
+            </div>
+          </div>
+
+          {(quote || quoteError || quoting) && (
+            <div className="mt-3 space-y-1 px-1 text-xs">
+              {quoteError ? (
+                <p style={{ color: "var(--danger)" }}>{quoteError}</p>
+              ) : quote ? (
+                <>
+                  <p className="flex justify-between">
+                    <span className="text-[var(--muted)]">Rate</span>
+                    <span className="mono">
+                      1 {paySymbol} ≈{" "}
+                      {formatAmount(
+                        Number(quote.receiveAmount) / Number(payAmount)
+                      )}{" "}
+                      {receiveSymbol}
+                    </span>
+                  </p>
+                  {quote.minReceived && (
+                    <p className="flex justify-between">
+                      <span className="text-[var(--muted)]">
+                        Min. received
+                      </span>
+                      <span className="mono">
+                        {formatAmount(Number(quote.minReceived))}{" "}
+                        {receiveSymbol}
+                      </span>
+                    </p>
+                  )}
+                  <p className="flex justify-between">
+                    <span className="text-[var(--muted)]">
+                      Price impact ({settings.slippagePct}% max slippage)
+                    </span>
+                    <span className="mono" style={{ color: impactColor }}>
+                      {quote.feePct == null
+                        ? "—"
+                        : `${quote.feePct.toFixed(2)}%`}
+                    </span>
+                  </p>
+                </>
+              ) : null}
+            </div>
+          )}
+
+          {insufficient && (
+            <p className="mt-3 px-1 text-xs" style={{ color: "var(--danger)" }}>
+              Insufficient {paySymbol} balance.{" "}
+              <a
+                href={FAUCET_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2"
+              >
+                Get test funds at faucet.circle.com
+              </a>
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={handleSwap}
+            disabled={!canSwap}
+            className="mt-3 w-full cursor-pointer rounded-xl bg-[var(--accent)] py-3 text-base font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {swapButtonLabel()}
+          </button>
+        </main>
+
+        <RecentSwaps refreshKey={swapsRefreshKey} />
+
+        <footer className="pb-6 text-center text-xs text-[var(--muted)]">
           <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            href={ARC_EXPLORER}
             target="_blank"
             rel="noopener noreferrer"
+            className="underline-offset-2 hover:underline"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
+            Arc Testnet Explorer ↗
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        </footer>
+      </div>
     </div>
   );
 }

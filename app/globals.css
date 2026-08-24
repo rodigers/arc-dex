@@ -3,6 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --card: #ffffff;
+  --muted: #71717a;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --accent: #171717;
+  --accent-foreground: #ffffff;
+  --danger: #dc2626;
+  --warning: #b45309;
+  --success: #15803d;
+  --shimmer-base: rgba(0, 0, 0, 0.05);
+  --shimmer-highlight: rgba(255, 255, 255, 0.65);
 }
 
 @theme inline {
@@ -16,11 +27,107 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --card: #111111;
+    --muted: #8f8f96;
+    --border: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.24);
+    --accent: #ededed;
+    --accent-foreground: #0a0a0a;
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --success: #4ade80;
+    --shimmer-base: rgba(255, 255, 255, 0.06);
+    --shimmer-highlight: rgba(255, 255, 255, 0.14);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.mono {
+  font-family: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo,
+    monospace;
+}
+
+/*
+ * Decorative grid backdrop.
+ * The grid is painted by a ::before pseudo-element that sits behind the
+ * container's content (negative z-index + isolation). It never wraps or
+ * masks real content, so nothing below the fold can be clipped on mobile.
+ */
+.grid-bg {
+  position: relative;
+  isolation: isolate;
+}
+
+.grid-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(128, 128, 128, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(128, 128, 128, 0.08) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  background-color: var(--shimmer-base);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    var(--shimmer-highlight),
+    transparent
+  );
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.18s ease-out;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.15s ease-out;
 }
