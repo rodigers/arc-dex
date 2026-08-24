@@ -439,7 +439,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-dvh flex-col px-4 py-6">
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 xl:gap-6">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 xl:gap-6">
         {/* Header */}
         <header
           className={`sticky top-0 z-40 -mx-4 -my-3 flex items-center justify-between border-b px-4 py-3 transition-colors duration-200 ${
@@ -489,7 +489,7 @@ export default function Home() {
         </header>
 
         {/* Swap card CENTER stage — side panels only on xl screens */}
-        <div className="grid flex-1 items-start gap-5 xl:grid-cols-[minmax(260px,320px)_minmax(0,480px)_minmax(260px,320px)] xl:gap-6">
+        <div className="grid flex-1 items-start gap-5 xl:grid-cols-[minmax(280px,1fr)_minmax(0,620px)_minmax(280px,1fr)] xl:gap-6">
           {/* LEFT context column (desktop only, only when wallet connected) */}
           {connection && (
             <aside className="hidden flex-col gap-5 xl:flex xl:gap-6">
