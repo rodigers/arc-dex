@@ -3880,7 +3880,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/node_modules/next/dist/server/load-manifest.external.js": {
-      "bytes": 32791,
+      "bytes": 32792,
       "imports": [
         {
           "path": "path",
@@ -4382,7 +4382,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0dz2pvj._.js": {
-      "bytes": 3113,
+      "bytes": 3436,
       "imports": [],
       "format": "cjs"
     },
@@ -5272,8 +5272,29 @@
       ],
       "format": "cjs"
     },
+    ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1fkpme2._.js": {
+      "bytes": 7037,
+      "imports": [
+        {
+          "path": "node:crypto",
+          "kind": "require-call",
+          "external": true
+        },
+        {
+          "path": "path",
+          "kind": "require-call",
+          "external": true
+        },
+        {
+          "path": "util",
+          "kind": "require-call",
+          "external": true
+        }
+      ],
+      "format": "cjs"
+    },
     ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js": {
-      "bytes": 1151460,
+      "bytes": 1197958,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/pino/pino.js",
@@ -5359,27 +5380,6 @@
         {
           "path": "<runtime>",
           "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1x5kemg._.js": {
-      "bytes": 7037,
-      "imports": [
-        {
-          "path": "node:crypto",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "path",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "util",
-          "kind": "require-call",
           "external": true
         }
       ],
@@ -5549,6 +5549,11 @@
           "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0wilgzb._.js"
         },
         {
+          "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1fkpme2._.js",
+          "kind": "require-call",
+          "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1fkpme2._.js"
+        },
+        {
           "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js",
           "kind": "require-call",
           "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js"
@@ -5557,11 +5562,6 @@
           "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1ten5ga._.js",
           "kind": "require-call",
           "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1ten5ga._.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1x5kemg._.js",
-          "kind": "require-call",
-          "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1x5kemg._.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/chunks/ssr/_next-internal_server_app_page_actions_0hhsz1j.js",
@@ -5735,6 +5735,11 @@
           "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0wilgzb._.js"
         },
         {
+          "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1fkpme2._.js",
+          "kind": "require-call",
+          "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1fkpme2._.js"
+        },
+        {
           "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js",
           "kind": "require-call",
           "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js"
@@ -5743,11 +5748,6 @@
           "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1ten5ga._.js",
           "kind": "require-call",
           "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1ten5ga._.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1x5kemg._.js",
-          "kind": "require-call",
-          "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1x5kemg._.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/chunks/ssr/_next-internal_server_app_page_actions_0hhsz1j.js",
@@ -7123,7 +7123,7 @@
       "format": "esm"
     },
     ".open-next/server-functions/default/index.mjs": {
-      "bytes": 84678,
+      "bytes": 84679,
       "imports": [
         {
           "path": "node:module",
@@ -7623,6 +7623,21 @@
           "external": true
         },
         {
+          "path": "node:crypto",
+          "kind": "require-call",
+          "external": true
+        },
+        {
+          "path": "path",
+          "kind": "require-call",
+          "external": true
+        },
+        {
+          "path": "util",
+          "kind": "require-call",
+          "external": true
+        },
+        {
           "path": "process",
           "kind": "require-call",
           "external": true
@@ -7689,21 +7704,6 @@
         },
         {
           "path": "punycode",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "node:crypto",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "path",
-          "kind": "require-call",
-          "external": true
-        },
-        {
-          "path": "util",
           "kind": "require-call",
           "external": true
         },
@@ -8695,7 +8695,7 @@
           "bytesInOutput": 586
         },
         ".open-next/server-functions/default/node_modules/next/dist/server/load-manifest.external.js": {
-          "bytesInOutput": 24331
+          "bytesInOutput": 24332
         },
         ".open-next/cloudflare-templates/shims/throw.js": {
           "bytesInOutput": 215
@@ -8788,7 +8788,7 @@
           "bytesInOutput": 5046
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0dz2pvj._.js": {
-          "bytesInOutput": 3230
+          "bytesInOutput": 3553
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0xtssj3._.js": {
           "bytesInOutput": 4014
@@ -8916,14 +8916,14 @@
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0wilgzb._.js": {
           "bytesInOutput": 4159
         },
+        ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1fkpme2._.js": {
+          "bytesInOutput": 7685
+        },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js": {
-          "bytesInOutput": 1239278
+          "bytesInOutput": 1288948
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1ten5ga._.js": {
           "bytesInOutput": 621632
-        },
-        ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1x5kemg._.js": {
-          "bytesInOutput": 7685
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/_next-internal_server_app_page_actions_0hhsz1j.js": {
           "bytesInOutput": 249
@@ -9109,10 +9109,10 @@
           "bytesInOutput": 5074
         },
         ".open-next/server-functions/default/index.mjs": {
-          "bytesInOutput": 58352
+          "bytesInOutput": 58353
         }
       },
-      "bytes": 5107190
+      "bytes": 5157185
     }
   }
 }

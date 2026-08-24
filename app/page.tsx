@@ -473,15 +473,17 @@ export default function Home() {
             <WalletButton onConnected={handleConnected} />          </div>
         </header>
 
-        {/* Two-column desktop / stacked mobile — swap card centered */}
-        <div className="grid flex-1 items-start gap-5 lg:grid-cols-[minmax(280px,340px)_minmax(0,460px)_minmax(280px,340px)]">
-          {/* LEFT context column (desktop only) */}
-          <aside className="hidden flex-col gap-4 lg:flex">
-            {connection && <Portfolio balances={balances} />}
-          </aside>
+        {/* Swap card CENTER stage — side panels only on xl screens */}
+        <div className="grid flex-1 items-start gap-5 xl:grid-cols-[minmax(260px,320px)_minmax(0,480px)_minmax(260px,320px)]">
+          {/* LEFT context column (desktop only, only when wallet connected) */}
+          {connection && (
+            <aside className="hidden flex-col gap-4 xl:flex">
+              <Portfolio balances={balances} />
+            </aside>
+          )}
 
           {/* CENTER: action first */}
-          <div className="flex w-full flex-col gap-4">
+          <div className={`flex w-full flex-col gap-4 ${connection ? "" : "xl:col-start-2"}`}>
             {/* Tabs */}
             <section className="grid grid-cols-4 gap-1 rounded-xl border border-[var(--border)] bg-[var(--card)] p-1">
               {(
