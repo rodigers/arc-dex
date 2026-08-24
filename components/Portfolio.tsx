@@ -6,6 +6,8 @@ import { displaySymbolOf, TOKENS } from "@/lib/tokens";
 import { tokenBalanceKey, type Balances } from "@/lib/balances";
 import { priceFor, useMarketPrices } from "@/lib/market";
 import { formatAmount, formatUsd } from "@/lib/format";
+import { useRecordPortfolio } from "@/lib/history";
+import { PortfolioChart } from "@/components/PortfolioChart";
 
 const HIDE_KEY = "arcswap_hide_balances";
 
@@ -69,6 +71,9 @@ export function Portfolio({ balances }: { balances: Balances }) {
   const total = rows.reduce((acc, r) => acc + (r.usdValue ?? 0), 0);
   const anyPrice = rows.some((r) => r.usdValue != null);
 
+  // Snapshot the portfolio value (rate-limited to one point / 10 minutes).
+  useRecordPortfolio(anyPrice && total > 0 ? total : null);
+
   const mask = (node: React.ReactNode) =>
     hidden ? <span aria-label="hidden">••••</span> : node;
 
@@ -117,6 +122,8 @@ export function Portfolio({ balances }: { balances: Balances }) {
           )}
         </button>
       </div>
+
+      <PortfolioChart />
 
       <ul className="mt-3 space-y-1">
         {rows.map((r) => (

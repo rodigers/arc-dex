@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import type { EIP1193Provider } from "viem";
 import {
   useBridge,
-  BRIDGE_CHAINS,
   chainLabel,
   type BridgeChainId,
 } from "@/lib/bridge";
 import { ARC_EXPLORER } from "@/lib/tokens";
 import { TokenDot } from "@/components/TokenBadge";
+import { ChainPicker } from "@/components/ChainPicker";
+import { recordBridgeJob } from "@/components/BridgeTracker";
 
 type Connection = { provider: EIP1193Provider; address: string };
 
@@ -61,6 +62,7 @@ export function BridgePanel({
     );
     if (res.ok) {
       setTxHash(res.hash);
+      recordBridgeJob({ txHash: res.hash, fromChain, toChain });
       setAmount("");
       onBridged();
     }
@@ -88,17 +90,13 @@ export function BridgePanel({
             onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
             className="mono w-full bg-transparent text-xl font-medium outline-none placeholder:text-[var(--muted)]/50"
           />
-          <select
+          <ChainPicker
             value={fromChain}
-            onChange={(e) => setFromChain(e.target.value as BridgeChainId)}
-            className="mono cursor-pointer appearance-none rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-xs outline-none"
+            onSelect={(id) => setFromChain(id as BridgeChainId)}
+            disabledIds={[toChain]}
           >
-            {BRIDGE_CHAINS.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+            {chainLabel(fromChain)}
+          </ChainPicker>
         </div>
       </div>
 
@@ -120,17 +118,13 @@ export function BridgePanel({
           >
             {estimate?.estimatedOutput?.amount ?? (amount || "0.00")}
           </span>
-          <select
+          <ChainPicker
             value={toChain}
-            onChange={(e) => setToChain(e.target.value as BridgeChainId)}
-            className="mono cursor-pointer appearance-none rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-xs outline-none"
+            onSelect={(id) => setToChain(id as BridgeChainId)}
+            disabledIds={[fromChain]}
           >
-            {BRIDGE_CHAINS.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+            {chainLabel(toChain)}
+          </ChainPicker>
         </div>
         {fromChain === toChain && (
           <p className="mt-1.5 text-[11px] text-red-500">

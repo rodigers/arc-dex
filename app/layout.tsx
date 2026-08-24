@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/lib/toast";
 import { ToastViewport } from "@/components/Toast";
@@ -17,6 +17,23 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ArcSwap",
   description: "Swap stablecoins on Arc Testnet",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ArcSwap",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#171717",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -22,6 +22,21 @@ import {
 import { TokenBadge, TokenDot } from "@/components/TokenBadge";
 import { WalletButton } from "@/components/WalletButton";
 import { BridgePanel } from "@/components/BridgePanel";
+import { BridgeTracker } from "@/components/BridgeTracker";
+import { MultiChainBalances } from "@/components/MultiChainBalances";
+import { LimitOrderPanel } from "@/components/LimitOrderPanel";
+import { DcaPanel } from "@/components/DcaPanel";
+import { PriceAlerts } from "@/components/PriceAlerts";
+import { ShareReceipt } from "@/components/ShareReceipt";
+import { InstallButton } from "@/components/InstallButton";
+import { ReferralCard } from "@/components/ReferralCard";
+import {
+  loadFeeTierBps,
+  loadReferralAddress,
+  saveFeeTierBps,
+  saveReferralAddress,
+  applyAppFee,
+} from "@/lib/fees";
 import { PriceChart } from "@/components/PriceChart";
 import { Portfolio } from "@/components/Portfolio";
 import { SwapConfirmModal } from "@/components/SwapConfirmModal";
@@ -105,8 +120,10 @@ export default function Home() {
   const [settings, setSettings] = useState<SwapSettings>(DEFAULT_SETTINGS);
   const [flipRotated, setFlipRotated] = useState(false);
   const [swapsRefreshKey, setSwapsRefreshKey] = useState(0);
-  const [tab, setTab] = useState<"swap" | "bridge">("swap");
+  const [tab, setTab] = useState<"swap" | "bridge" | "limit" | "dca">("swap");
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [receipt, setReceipt] = useState<SwapRecord | null>(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [chainId, setChainId] = useState<string | null>(null);
   const [quoteNonce, setQuoteNonce] = useState(0);
 
@@ -119,6 +136,11 @@ export default function Home() {
 
   const slippageBps = Math.round(settings.slippagePct * 100);
 
+  // App-fee view of the current quote (display-level; protocol output unchanged).
+  const feeView = quote
+    ? applyAppFee(Number(quote.receiveAmount), settings.feeBps)
+    : null;
+
   // Restore last-used tokens + slippage after mount (avoids SSR mismatch).
   useEffect(() => {
     const prefs = readPrefs();
@@ -127,7 +149,25 @@ export default function Home() {
     if (prefs.slippagePct != null) {
       setSettings((s) => ({ ...s, slippagePct: prefs.slippagePct! }));
     }
+    setSettings((s) => ({
+      ...s,
+      feeBps: loadFeeTierBps(),
+      referral: loadReferralAddress() ?? "",
+    }));
+    // Capture inbound referral links: /?ref=0x…
+    try {
+      const ref = new URLSearchParams(window.location.search).get("ref");
+      if (ref && /^0x[0-9a-fA-F]{40}$/.test(ref)) saveReferralAddress(ref);
+    } catch {
+      // ignore malformed URLs
+    }
   }, []);
+
+  // Persist fee tier + referral whenever they change.
+  useEffect(() => {
+    saveFeeTierBps(settings.feeBps);
+    saveReferralAddress(settings.referral || null);
+  }, [settings.feeBps, settings.referral]);
 
   // Persist preferences whenever they change.
   useEffect(() => {
@@ -344,6 +384,7 @@ export default function Home() {
         timestamp: Date.now(),
       };
       saveRecentSwap(record);
+      setReceipt(record);
       setSwapsRefreshKey((k) => k + 1);
       setPayAmount("");
       setConfirmOpen(false);
@@ -427,21 +468,28 @@ export default function Home() {
                 Switch to Arc
               </button>
             )}
+            <PriceAlerts />
             <SettingsPopover settings={settings} onChange={setSettings} />
-            <WalletButton onConnected={handleConnected} />
-          </div>
+            <WalletButton onConnected={handleConnected} />          </div>
         </header>
 
-        {/* Two-column desktop / stacked mobile */}
-        <div className="grid flex-1 items-start gap-5 lg:grid-cols-[minmax(0,420px)_minmax(300px,360px)] lg:justify-center">
-          {/* MAIN column: action first */}
-          <div className="flex flex-col gap-4">
+        {/* Two-column desktop / stacked mobile — swap card centered */}
+        <div className="grid flex-1 items-start gap-5 lg:grid-cols-[minmax(280px,340px)_minmax(0,460px)_minmax(280px,340px)]">
+          {/* LEFT context column (desktop only) */}
+          <aside className="hidden flex-col gap-4 lg:flex">
+            {connection && <Portfolio balances={balances} />}
+          </aside>
+
+          {/* CENTER: action first */}
+          <div className="flex w-full flex-col gap-4">
             {/* Tabs */}
-            <section className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--border)] bg-[var(--card)] p-1">
+            <section className="grid grid-cols-4 gap-1 rounded-xl border border-[var(--border)] bg-[var(--card)] p-1">
               {(
                 [
                   ["swap", "Swap"],
                   ["bridge", "Bridge"],
+                  ["limit", "Limit"],
+                  ["dca", "DCA"],
                 ] as const
               ).map(([id, label]) => (
                 <button
@@ -457,8 +505,6 @@ export default function Home() {
                 </button>
               ))}
             </section>
-
-        {tab === "swap" && <PriceChart />}
 
         <main
           className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4"
@@ -534,9 +580,11 @@ export default function Home() {
                 value={
                   quoting
                     ? ""
-                    : (quote?.receiveAmount
+                    : feeView && feeView.feeAmount > 0
+                      ? formatAmount(feeView.netReceive)
+                      : quote?.receiveAmount
                         ? formatAmount(Number(quote.receiveAmount))
-                        : "")
+                        : ""
                 }
                 className="mono min-w-0 flex-1 bg-transparent text-2xl outline-none placeholder:text-[var(--muted)]"
                 aria-label="Amount to receive"
@@ -577,6 +625,16 @@ export default function Home() {
                       <span className="mono">
                         {formatAmount(Number(quote.minReceived))}{" "}
                         {receiveSymbol}
+                      </span>
+                    </p>
+                  )}
+                  {feeView && feeView.feeAmount > 0 && (
+                    <p className="flex justify-between">
+                      <span className="text-[var(--muted)]">
+                        App fee ({(settings.feeBps / 100).toFixed(2)}%)
+                      </span>
+                      <span className="mono">
+                        −{formatAmount(feeView.feeAmount)} {receiveSymbol}
                       </span>
                     </p>
                   )}
@@ -621,6 +679,9 @@ export default function Home() {
 
         {/* Bridge tab */}
         {tab === "bridge" && (
+          <MultiChainBalances address={connection?.address ?? null} />
+        )}
+        {tab === "bridge" && (
           <BridgePanel
             connection={connection}
             getAdapter={getAdapter as () => never}
@@ -631,29 +692,80 @@ export default function Home() {
           />
         )}
 
+        {/* Limit tab (always mounted so open orders keep being evaluated) */}
+        <div hidden={tab !== "limit"}>
+          <LimitOrderPanel
+            connection={connection}
+            onSwapped={refetch}
+          />
+        </div>
+
+        {/* DCA tab (always mounted so scheduled buys keep firing) */}
+        <div hidden={tab !== "dca"}>
+          <DcaPanel
+            connection={connection}
+            onSwapped={refetch}
+          />
+        </div>
+
+            {receipt && (
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs">
+                <span className="truncate">
+                  ✓ Swap complete ·{" "}
+                  <span className="mono text-[var(--muted)]">
+                    {receipt.fromAmount} {receipt.fromSymbol} →{" "}
+                    {receipt.toAmount} {receipt.toSymbol}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setReceiptOpen(true)}
+                    className="cursor-pointer rounded-lg bg-[var(--accent)] px-2.5 py-1 font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-85"
+                  >
+                    Share
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Dismiss"
+                    onClick={() => setReceipt(null)}
+                    className="cursor-pointer rounded-md p-0.5 leading-none text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+                  >
+                    ✕
+                  </button>
+                </span>
+              </div>
+            )}
+
             <RecentSwaps
               refreshKey={swapsRefreshKey}
               address={connection?.address ?? null}
             />
+
+            <BridgeTracker onComplete={refetch} />
           </div>
 
-          {/* CONTEXT column: portfolio + chart (desktop) / below action (mobile) */}
+          {/* RIGHT context column */}
           <aside className="flex flex-col gap-4">
-            {connection && <Portfolio balances={balances} />}
             {tab === "swap" && <PriceChart />}
+            {connection && <Portfolio balances={balances} />}
+            <ReferralCard address={connection?.address ?? null} />
           </aside>
         </div>
 
-        <footer className="pb-2 text-center text-xs text-[var(--muted)]">
-          Arc Testnet · chain 5042002 · gas USDC ·{" "}
-          <a
-            href={ARC_EXPLORER}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline-offset-2 hover:underline"
-          >
-            Explorer ↗
-          </a>
+        <footer className="flex flex-col items-center gap-2 pb-2 text-center text-xs text-[var(--muted)]">
+          <div>
+            Arc Testnet · chain 5042002 · gas USDC ·{" "}
+            <a
+              href={ARC_EXPLORER}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline-offset-2 hover:underline"
+            >
+              Explorer ↗
+            </a>
+          </div>
+          <InstallButton />
         </footer>
       </div>
 
@@ -669,6 +781,11 @@ export default function Home() {
         getAdapter={getAdapter}
         onConfirm={() => void executeSwap()}
         onClose={() => setConfirmOpen(false)}
+      />
+
+      <ShareReceipt
+        record={receiptOpen ? receipt : null}
+        onClose={() => setReceiptOpen(false)}
       />
     </div>
   );

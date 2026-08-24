@@ -838,10 +838,10 @@ module.exports = (sourcePath)=>({
       case "server/chunks/[root-of-the-server]__16yq9mn._.js": return require("/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/[root-of-the-server]__16yq9mn._.js");
       case "server/chunks/[turbopack]_runtime.js": return require("/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/[turbopack]_runtime.js");
       case "server/chunks/_next-internal_server_app_favicon_ico_route_actions_0g2jjls.js": return require("/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/_next-internal_server_app_favicon_ico_route_actions_0g2jjls.js");
-      case "server/chunks/ssr/[root-of-the-server]__088ksbw._.js": return require("/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__088ksbw._.js");
       case "server/chunks/ssr/[root-of-the-server]__0wilgzb._.js": return require("/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0wilgzb._.js");
       case "server/chunks/ssr/[root-of-the-server]__1qktha8._.js": return require("/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js");
       case "server/chunks/ssr/[root-of-the-server]__1ten5ga._.js": return require("/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1ten5ga._.js");
+      case "server/chunks/ssr/[root-of-the-server]__1x5kemg._.js": return require("/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1x5kemg._.js");
       case "server/chunks/ssr/_next-internal_server_app_page_actions_0hhsz1j.js": return require("/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/_next-internal_server_app_page_actions_0hhsz1j.js");
       case "server/chunks/ssr/node_modules_20_uaom._.js": return require("/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/node_modules_20_uaom._.js");
       case "server/chunks/ssr/node_modules_@noble_1zc86r-._.js": return require("/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/node_modules_@noble_1zc86r-._.js");

@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { FEE_TIERS } from "@/lib/fees";
 
 export type SwapSettings = {
   slippagePct: number;
   deadlineMinutes: number;
+  feeBps: number;
+  referral: string;
 };
 
 const SLIPPAGE_PRESETS = [0.1, 0.5, 1];
@@ -12,6 +15,8 @@ const SLIPPAGE_PRESETS = [0.1, 0.5, 1];
 export const DEFAULT_SETTINGS: SwapSettings = {
   slippagePct: 0.5,
   deadlineMinutes: 20,
+  feeBps: 30,
+  referral: "",
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -124,6 +129,45 @@ export function SettingsPopover({
                 : "Slippage too low — transaction may fail."}
             </p>
           )}
+
+          <div className="mt-4 mb-1.5 text-sm font-semibold">
+            Fee tier
+          </div>
+          <div className="flex gap-2">
+            {FEE_TIERS.map((t) => (
+              <button
+                key={t.bps}
+                type="button"
+                title={t.desc}
+                onClick={() => onChange({ ...settings, feeBps: t.bps })}
+                className={`mono flex-1 rounded-lg border px-2 py-1.5 text-sm transition ${
+                  settings.feeBps === t.bps
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
+                    : "border-[var(--border)] hover:border-[var(--border-strong)]"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-[11px] text-[var(--muted)]">
+            {FEE_TIERS.find((t) => t.bps === settings.feeBps)?.desc} — shown net
+            in your estimate.
+          </p>
+
+          <div className="mt-4 mb-1.5 text-sm font-semibold">
+            Referral address (optional)
+          </div>
+          <input
+            value={settings.referral}
+            onChange={(e) =>
+              onChange({ ...settings, referral: e.target.value.trim() })
+            }
+            placeholder="0x… earns a share of app fees"
+            spellCheck={false}
+            className="mono w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-xs outline-none focus:border-[var(--border-strong)]"
+            aria-label="Referral address"
+          />
 
           <div className="mt-4 mb-1.5 text-sm font-semibold">
             Transaction deadline
