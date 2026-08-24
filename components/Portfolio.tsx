@@ -14,6 +14,7 @@ type Row = {
   balance: number;
   usdValue: number | null;
   change24h: number | null;
+  isGas?: boolean;
 };
 
 export function Portfolio({ balances }: { balances: Balances }) {
@@ -42,20 +43,27 @@ export function Portfolio({ balances }: { balances: Balances }) {
     });
   }
 
-  const rows: Row[] = useMemo(
-    () =>
-      TOKENS.map((t) => {
-        const balance = balances[tokenBalanceKey(t.symbol)] ?? 0;
-        const market = priceFor(prices, t.symbol);
-        return {
-          meta: t,
-          balance,
-          usdValue: market ? balance * market.usd : null,
-          change24h: market?.change24h ?? null,
-        };
-      }),
-    [balances, prices]
-  );
+  const rows: Row[] = useMemo(() => {
+    // USDC (ERC-20) and NATIVE gas are the same asset on Arc — merge them.
+    const usdc = (balances[tokenBalanceKey("USDC")] ?? 0);
+    const native = balances["NATIVE"] ?? 0;
+    const mergedUsdc = usdc + native;
+
+    return TOKENS.filter((t) => t.symbol !== "NATIVE").map((t) => {
+      const balance =
+        t.symbol === "USDC"
+          ? mergedUsdc
+          : (balances[tokenBalanceKey(t.symbol)] ?? 0);
+      const market = priceFor(prices, t.symbol);
+      return {
+        meta: t,
+        balance,
+        usdValue: market ? balance * market.usd : null,
+        change24h: market?.change24h ?? null,
+        isGas: t.symbol === "USDC",
+      };
+    });
+  }, [balances, prices]);
 
   const total = rows.reduce((acc, r) => acc + (r.usdValue ?? 0), 0);
   const anyPrice = rows.some((r) => r.usdValue != null);

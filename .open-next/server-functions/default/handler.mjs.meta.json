@@ -5294,7 +5294,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js": {
-      "bytes": 1147377,
+      "bytes": 1147500,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/pino/pino.js",
@@ -8920,7 +8920,7 @@
           "bytesInOutput": 4159
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js": {
-          "bytesInOutput": 1234996
+          "bytesInOutput": 1235135
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1ten5ga._.js": {
           "bytesInOutput": 621632
@@ -9112,7 +9112,7 @@
           "bytesInOutput": 58352
         }
       },
-      "bytes": 5102908
+      "bytes": 5103047
     }
   }
 }
