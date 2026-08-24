@@ -243,6 +243,20 @@ body {
   animation: fade-up 240ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Success card shine sweep — plays once when the card mounts */
+@keyframes success-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.animate-success-sweep {
+  animation: success-sweep 900ms ease-out 150ms 1 forwards;
+}
+
 @keyframes pop-in {
   from {
     opacity: 0;

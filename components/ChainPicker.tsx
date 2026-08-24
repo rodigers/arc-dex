@@ -1,10 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  BRIDGE_CHAINS,
-  type BridgeChain,
-} from "@/lib/bridgeChains";
+import { BRIDGE_CHAINS, type BridgeChain } from "@/lib/bridgeChains";
+import { ChainIcon } from "@/components/ChainIcon";
 
 /**
  * Searchable chain picker modal — replaces the old 4-chain <select>.
@@ -122,7 +120,10 @@ export function ChainPicker({
                             : "hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
                       }`}
                     >
-                      <span>{c.label}</span>
+                      <span className="flex items-center gap-2">
+                        <ChainIcon chainLabel={c.label} size={20} />
+                        {c.label}
+                      </span>
                       <span
                         className={`text-[9px] uppercase tracking-wide ${
                           c.id === value

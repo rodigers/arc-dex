@@ -10,6 +10,7 @@ import {
 import { ARC_EXPLORER } from "@/lib/tokens";
 import { TokenDot } from "@/components/TokenBadge";
 import { ChainPicker } from "@/components/ChainPicker";
+import { ChainIcon } from "@/components/ChainIcon";
 import { recordBridgeJob } from "@/components/BridgeTracker";
 
 type Connection = { provider: EIP1193Provider; address: string };
@@ -95,6 +96,7 @@ export function BridgePanel({
             onSelect={(id) => setFromChain(id as BridgeChainId)}
             disabledIds={[toChain]}
           >
+            <ChainIcon chainLabel={chainLabel(fromChain)} size={18} />
             {chainLabel(fromChain)}
           </ChainPicker>
         </div>
@@ -123,6 +125,7 @@ export function BridgePanel({
             onSelect={(id) => setToChain(id as BridgeChainId)}
             disabledIds={[fromChain]}
           >
+            <ChainIcon chainLabel={chainLabel(toChain)} size={18} />
             {chainLabel(toChain)}
           </ChainPicker>
         </div>

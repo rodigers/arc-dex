@@ -332,7 +332,8 @@ export default function Home() {
     connection &&
     parsedPayAmount > 0 &&
     Number.isFinite(parsedPayAmount) &&
-    parsedPayAmount > payBalance;
+    // 0.000001 tolerance: display rounding must not flag false "insufficient"
+    parsedPayAmount > payBalance + 1e-6;
 
   function selectPay(symbol: TokenSymbol) {
     if (symbol === receiveSymbol) setReceiveSymbol(paySymbol);
@@ -351,7 +352,8 @@ export default function Home() {
   }
 
   function setMax() {
-    setPayAmount(formatAmount(payBalance));
+    // Use full precision (not display-rounded) so MAX never exceeds balance.
+    setPayAmount(String(Math.floor(payBalance * 1e6) / 1e6));
   }
 
   function openConfirm() {
@@ -364,6 +366,16 @@ export default function Home() {
     setSwapping(true);
     try {
       const adapter = await getAdapter();
+      // Real referral wiring: when a referrer is stored, route the app's
+      // customFee split so the referrer receives their share on-chain.
+      const referrer = loadReferralAddress();
+      const config: Record<string, unknown> = { slippageBps };
+      if (referrer && settings.feeBps > 0) {
+        config.customFee = {
+          percentageBps: Math.round(settings.feeBps / 10), // 10% of app fee to referrer
+          recipientAddress: referrer,
+        };
+      }
       const result = await getAppKit().swap({
         from: {
           adapter,
@@ -372,7 +384,7 @@ export default function Home() {
         tokenIn: paySymbol,
         tokenOut: receiveSymbol,
         amountIn: payAmount,
-        config: { slippageBps },
+        config,
       });
 
       const toAmount =
@@ -490,12 +502,16 @@ export default function Home() {
 
         {/* Swap card CENTER stage — side panels only on xl screens */}
         <div className="grid flex-1 items-start gap-5 xl:grid-cols-[minmax(280px,1fr)_minmax(0,620px)_minmax(280px,1fr)] xl:gap-6">
-          {/* LEFT context column (desktop only, only when wallet connected) */}
-          {connection && (
-            <aside className="hidden flex-col gap-5 xl:flex xl:gap-6">
-              <Portfolio balances={balances} />
-            </aside>
-          )}
+          {/* LEFT context column (desktop only) — sidebar with full wallet info */}
+          <aside className="hidden flex-col gap-5 xl:flex xl:gap-6">
+            {connection && <Portfolio balances={balances} />}
+            {connection && (
+              <RecentSwaps
+                refreshKey={swapsRefreshKey}
+                address={connection.address}
+              />
+            )}
+          </aside>
 
           {/* CENTER: action first */}
           <div className={`flex w-full flex-col gap-5 ${connection ? "" : "xl:col-start-2"} xl:gap-6`}>
@@ -730,38 +746,48 @@ export default function Home() {
         </div>
 
             {receipt && (
-              <div className="flex items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs">
-                <span className="truncate">
-                  ✓ Swap complete ·{" "}
-                  <span className="mono text-[var(--muted)]">
-                    {receipt.fromAmount} {receipt.fromSymbol} →{" "}
-                    {receipt.toAmount} {receipt.toSymbol}
+              <div
+                role="status"
+                className="animate-fade-up relative overflow-hidden rounded-xl border border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 to-transparent px-4 py-3.5"
+              >
+                {/* animated shine sweep */}
+                <span
+                  aria-hidden
+                  className="animate-success-sweep pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                />
+                <div className="relative flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 animate-pop-in items-center justify-center rounded-full bg-emerald-500 text-white">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
                   </span>
-                </span>
-                <span className="flex shrink-0 items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setReceiptOpen(true)}
-                    className="cursor-pointer rounded-lg bg-[var(--accent)] px-2.5 py-1 font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-85"
-                  >
-                    Share
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Dismiss"
-                    onClick={() => setReceipt(null)}
-                    className="cursor-pointer rounded-md p-0.5 leading-none text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
-                  >
-                    ✕
-                  </button>
-                </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">Swap complete 🎉</p>
+                    <p className="mono truncate text-xs text-[var(--muted)]">
+                      {receipt.fromAmount} {receipt.fromSymbol} →{" "}
+                      {receipt.toAmount} {receipt.toSymbol}
+                    </p>
+                  </div>
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setReceiptOpen(true)}
+                      className="cursor-pointer rounded-lg bg-[var(--accent)] px-2.5 py-1 font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-85"
+                    >
+                      Share
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Dismiss"
+                      onClick={() => setReceipt(null)}
+                      className="cursor-pointer rounded-md p-0.5 leading-none text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                </div>
               </div>
             )}
-
-            <RecentSwaps
-              refreshKey={swapsRefreshKey}
-              address={connection?.address ?? null}
-            />
 
             <BridgeTracker onComplete={refetch} />
           </div>

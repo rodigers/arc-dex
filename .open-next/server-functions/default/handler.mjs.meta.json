@@ -5272,7 +5272,7 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1cqcpuo._.js": {
+    ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1azmi6-._.js": {
       "bytes": 7037,
       "imports": [
         {
@@ -5294,7 +5294,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js": {
-      "bytes": 1200510,
+      "bytes": 1203473,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/pino/pino.js",
@@ -5549,9 +5549,9 @@
           "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0wilgzb._.js"
         },
         {
-          "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1cqcpuo._.js",
+          "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1azmi6-._.js",
           "kind": "require-call",
-          "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1cqcpuo._.js"
+          "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1azmi6-._.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js",
@@ -5735,9 +5735,9 @@
           "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0wilgzb._.js"
         },
         {
-          "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1cqcpuo._.js",
+          "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1azmi6-._.js",
           "kind": "require-call",
-          "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1cqcpuo._.js"
+          "original": "/home/ubuntu/arc-dex/.open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1azmi6-._.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js",
@@ -8916,11 +8916,11 @@
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0wilgzb._.js": {
           "bytesInOutput": 4159
         },
-        ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1cqcpuo._.js": {
-          "bytesInOutput": 7685
+        ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1azmi6-._.js": {
+          "bytesInOutput": 7684
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1qktha8._.js": {
-          "bytesInOutput": 1291532
+          "bytesInOutput": 1294547
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__1ten5ga._.js": {
           "bytesInOutput": 621632
@@ -8938,10 +8938,10 @@
           "bytesInOutput": 3549
         },
         ".open-next/server-functions/default/.next/server/chunks/[turbopack]_runtime.js": {
-          "bytesInOutput": 17709
+          "bytesInOutput": 17708
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[turbopack]_runtime.js": {
-          "bytesInOutput": 17724
+          "bytesInOutput": 17723
         },
         ".open-next/server-functions/default/.next/server/app/_global-error/page.js": {
           "bytesInOutput": 682
@@ -9112,7 +9112,7 @@
           "bytesInOutput": 58353
         }
       },
-      "bytes": 5160095
+      "bytes": 5163107
     }
   }
 }
