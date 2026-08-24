@@ -71,7 +71,7 @@ export function BridgePanel({
   const ready = Boolean(connection) && Number(amount) > 0 && fromChain !== toChain;
 
   return (
-    <section className="card rounded-2xl p-4">
+    <section className="card-hover rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-[var(--muted)]">
           Bridge USDC (CCTP)

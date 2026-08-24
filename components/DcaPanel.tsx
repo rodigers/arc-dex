@@ -128,7 +128,7 @@ export function DcaPanel({
   }
 
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+    <section className="card-hover rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
       <div className="text-xs font-medium text-[var(--muted)]">
         Dollar-cost averaging · buys automatically on a schedule while your
         wallet is connected

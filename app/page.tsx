@@ -126,6 +126,7 @@ export default function Home() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [chainId, setChainId] = useState<string | null>(null);
   const [quoteNonce, setQuoteNonce] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
 
   const connRef = useRef<Connection | null>(null);
   const adapterPromiseRef = useRef<Promise<AdapterFor> | null>(null);
@@ -206,6 +207,14 @@ export default function Home() {
       provider.removeListener("chainChanged", onChainChanged);
     };
   }, [connection]);
+
+  // Header elevation: blur + border once the page is scrolled a little.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const wrongNetwork =
     !!connection &&
@@ -429,10 +438,16 @@ export default function Home() {
           : "var(--success)";
 
   return (
-    <div className="grid-bg flex min-h-dvh flex-col px-4 py-6">
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5">
+    <div className="flex min-h-dvh flex-col px-4 py-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 xl:gap-6">
         {/* Header */}
-        <header className="flex items-center justify-between">
+        <header
+          className={`sticky top-0 z-40 -mx-4 -my-3 flex items-center justify-between border-b px-4 py-3 transition-colors duration-200 ${
+            scrolled
+              ? "header-blur border-[var(--border)]"
+              : "border-transparent"
+          }`}
+        >
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--accent)] text-sm font-bold text-[var(--background)]">
               A
@@ -474,16 +489,16 @@ export default function Home() {
         </header>
 
         {/* Swap card CENTER stage — side panels only on xl screens */}
-        <div className="grid flex-1 items-start gap-5 xl:grid-cols-[minmax(260px,320px)_minmax(0,480px)_minmax(260px,320px)]">
+        <div className="grid flex-1 items-start gap-5 xl:grid-cols-[minmax(260px,320px)_minmax(0,480px)_minmax(260px,320px)] xl:gap-6">
           {/* LEFT context column (desktop only, only when wallet connected) */}
           {connection && (
-            <aside className="hidden flex-col gap-4 xl:flex">
+            <aside className="hidden flex-col gap-5 xl:flex xl:gap-6">
               <Portfolio balances={balances} />
             </aside>
           )}
 
           {/* CENTER: action first */}
-          <div className={`flex w-full flex-col gap-4 ${connection ? "" : "xl:col-start-2"}`}>
+          <div className={`flex w-full flex-col gap-5 ${connection ? "" : "xl:col-start-2"} xl:gap-6`}>
             {/* Tabs */}
             <section className="grid grid-cols-4 gap-1 rounded-xl border border-[var(--border)] bg-[var(--card)] p-1">
               {(
@@ -509,7 +524,7 @@ export default function Home() {
             </section>
 
         <main
-          className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4"
+          className="card-hover animate-fade-up rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4"
           hidden={tab !== "swap"}
         >
           <div className="rounded-xl border border-[var(--border)] p-3">
@@ -681,21 +696,25 @@ export default function Home() {
 
         {/* Bridge tab */}
         {tab === "bridge" && (
-          <MultiChainBalances address={connection?.address ?? null} />
+          <div key="bridge-balances" className="animate-fade-up">
+            <MultiChainBalances address={connection?.address ?? null} />
+          </div>
         )}
         {tab === "bridge" && (
-          <BridgePanel
-            connection={connection}
-            getAdapter={getAdapter as () => never}
-            onBridged={() => {
-              refetch();
-              setSwapsRefreshKey((k) => k + 1);
-            }}
-          />
+          <div key="bridge-panel" className="animate-fade-up">
+            <BridgePanel
+              connection={connection}
+              getAdapter={getAdapter as () => never}
+              onBridged={() => {
+                refetch();
+                setSwapsRefreshKey((k) => k + 1);
+              }}
+            />
+          </div>
         )}
 
         {/* Limit tab (always mounted so open orders keep being evaluated) */}
-        <div hidden={tab !== "limit"}>
+        <div hidden={tab !== "limit"} className="animate-fade-up">
           <LimitOrderPanel
             connection={connection}
             onSwapped={refetch}
@@ -703,7 +722,7 @@ export default function Home() {
         </div>
 
         {/* DCA tab (always mounted so scheduled buys keep firing) */}
-        <div hidden={tab !== "dca"}>
+        <div hidden={tab !== "dca"} className="animate-fade-up">
           <DcaPanel
             connection={connection}
             onSwapped={refetch}
@@ -748,9 +767,9 @@ export default function Home() {
           </div>
 
           {/* RIGHT context column */}
-          <aside className="flex flex-col gap-4">
+          <aside className="flex flex-col gap-5 xl:gap-6">
             {tab === "swap" && <PriceChart />}
-            {connection && <Portfolio balances={balances} />}
+            <Portfolio balances={balances} connected={!!connection} />
             <ReferralCard address={connection?.address ?? null} />
           </aside>
         </div>

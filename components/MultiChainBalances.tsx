@@ -14,7 +14,7 @@ export function MultiChainBalances({ address }: { address: string | null }) {
   if (!address) return null;
 
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+    <section className="card-hover rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-[var(--muted)]">
           USDC across chains

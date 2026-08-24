@@ -112,7 +112,7 @@ export function PriceChart() {
   const shownChange = change ?? fallbackChange;
 
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+    <section className="card-hover rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}

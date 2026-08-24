@@ -8,6 +8,7 @@ import { priceFor, useMarketPrices } from "@/lib/market";
 import { formatAmount, formatUsd } from "@/lib/format";
 import { useRecordPortfolio } from "@/lib/history";
 import { PortfolioChart } from "@/components/PortfolioChart";
+import { EmptyState } from "@/components/EmptyState";
 
 const HIDE_KEY = "arcswap_hide_balances";
 
@@ -19,7 +20,13 @@ type Row = {
   isGas?: boolean;
 };
 
-export function Portfolio({ balances }: { balances: Balances }) {
+export function Portfolio({
+  balances,
+  connected = true,
+}: {
+  balances: Balances;
+  connected?: boolean;
+}) {
   const { prices } = useMarketPrices();
   const [hidden, setHidden] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -74,11 +81,37 @@ export function Portfolio({ balances }: { balances: Balances }) {
   // Snapshot the portfolio value (rate-limited to one point / 10 minutes).
   useRecordPortfolio(anyPrice && total > 0 ? total : null);
 
+  if (!connected) {
+    return (
+      <section className="card-surface rounded-2xl p-4">
+        <EmptyState
+          icon={
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2H5" />
+              <circle cx="16" cy="14" r="1" />
+            </svg>
+          }
+        >
+          Connect your wallet to see your balances.
+        </EmptyState>
+      </section>
+    );
+  }
+
   const mask = (node: React.ReactNode) =>
     hidden ? <span aria-label="hidden">••••</span> : node;
 
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+    <section className="card-hover rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
       {/* Collapsed header — click to expand (mobile-friendly drawer pattern) */}
       <button
         type="button"

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ARC_EXPLORER, tokenMeta } from "@/lib/tokens";
 import { formatAmount, shortHash, timeAgo } from "@/lib/format";
+import { EmptyState } from "@/components/EmptyState";
 
 export type SwapRecord = {
   txHash: string;
@@ -212,14 +213,45 @@ export function RecentSwaps({
     };
   }, [address, refreshKey]);
 
-  if (!mounted || swaps.length === 0) return null;
+  if (!mounted) return null;
+
+  if (swaps.length === 0) {
+    return (
+      <section className="mt-6">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+          Recent activity
+        </div>
+        <div className="card-surface rounded-2xl">
+          <EmptyState
+            icon={
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M4 7h13m0 0-3-3m3 3-3 3" />
+                <path d="M20 17H7m0 0 3-3m-3 3 3 3" />
+              </svg>
+            }
+          >
+            No swaps yet. Your recent swaps will appear here.
+          </EmptyState>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-6">
       <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
         Recent activity
       </div>
-      <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]">
+      <ul className="card-surface divide-y divide-[var(--border)] overflow-hidden rounded-2xl">
         {swaps.map((s) => (
           <li
             key={s.key}

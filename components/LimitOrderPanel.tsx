@@ -155,7 +155,7 @@ export function LimitOrderPanel({
   }
 
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+    <section className="card-hover rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
       <div className="text-xs font-medium text-[var(--muted)]">
         Limit orders · executes automatically when the rate crosses your target
       </div>
